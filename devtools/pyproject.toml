@@ -1,0 +1,27 @@
+[project]
+name = "devtools"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Luís Rodrigues", email = "luis.rodrigues@criticalsoftware.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "claude-agent-sdk>=0.2.128",
+    "python-dotenv>=1.2.2",
+]
+
+[project.scripts]
+implement = "devtools.implement:main"
+ship = "devtools.ship:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.0,<0.13.0"]
+build-backend = "uv_build"
