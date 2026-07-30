@@ -3,7 +3,8 @@ import socket
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from product.tutor import MODEL_NAME, OLLAMA_BASE_URL, SYSTEM_PROMPT, build_tutor_graph
+from product.agent_graph import OLLAMA_BASE_URL
+from product.tutor import MODEL_NAME, SYSTEM_PROMPT, build_tutor_graph
 
 
 def _ollama_reachable() -> bool:
