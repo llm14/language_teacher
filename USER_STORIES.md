@@ -33,10 +33,10 @@ v1 scope only. Pronunciation feedback and progress-tracking are deferred to v2 (
 **So that** I can drill vocabulary I choose, on demand
 
 ### Acceptance Criteria
-- [ ] I can name the word(s)/phrase(s) to be quizzed on
-- [ ] the agent asks questions about the requested vocab (not unrelated vocab)
-- [ ] the agent correctly judges whether my answer is right or wrong
-- [ ] feedback is given in European Portuguese
+- [x] I can name the word(s)/phrase(s) to be quizzed on
+- [x] the agent asks questions about the requested vocab (not unrelated vocab)
+- [x] the agent correctly judges whether my answer is right or wrong
+- [x] feedback is given in European Portuguese
 
 ## US-04: Orchestrator routes to the correct sub-agent
 

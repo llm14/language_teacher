@@ -5,12 +5,10 @@ Runs as a single-node LangGraph graph calling the local Ollama backend.
 
 from collections.abc import Callable
 
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
-from langchain_ollama import ChatOllama
-from langgraph.graph import END, StateGraph
-from typing_extensions import TypedDict
+from langchain_core.messages import AIMessage, BaseMessage
 
-OLLAMA_BASE_URL = "http://localhost:11434"
+from product.agent_graph import build_model, build_single_node_graph
+
 MODEL_NAME = "qwen2.5:7b"
 
 SYSTEM_PROMPT = """You are a Mandarin Chinese tutor speaking to a Portuguese learner. Follow these rules exactly.
@@ -33,31 +31,12 @@ SYSTEM_PROMPT = """You are a Mandarin Chinese tutor speaking to a Portuguese lea
 """
 
 
-class TutorState(TypedDict):
-    messages: list[BaseMessage]
-
-
-def _build_model(base_url: str = OLLAMA_BASE_URL, model: str = MODEL_NAME) -> ChatOllama:
-    return ChatOllama(base_url=base_url, model=model)
-
-
 def build_tutor_graph(model: Callable[[list[BaseMessage]], AIMessage] | None = None):
     """Compile the tutor's single-node graph.
 
     `model` defaults to a real ChatOllama instance but can be swapped for a stub in tests.
     """
-    llm = model or _build_model()
-
-    def tutor_node(state: TutorState) -> TutorState:
-        messages = [SystemMessage(content=SYSTEM_PROMPT), *state["messages"]]
-        response = llm.invoke(messages)
-        return {"messages": [*state["messages"], response]}
-
-    graph = StateGraph(TutorState)
-    graph.add_node("tutor", tutor_node)
-    graph.set_entry_point("tutor")
-    graph.add_edge("tutor", END)
-    return graph.compile()
+    return build_single_node_graph(SYSTEM_PROMPT, "tutor", model or build_model(MODEL_NAME))
 
 
 _tutor_graph = None
