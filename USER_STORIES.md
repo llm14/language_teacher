@@ -21,10 +21,10 @@ v1 scope only. Pronunciation feedback and progress-tracking are deferred to v2 (
 **So that** I can practice conversation and learn from my mistakes as I go
 
 ### Acceptance Criteria
-- [ ] agent replies in European Portuguese (not Brazilian)
-- [ ] agent stays on-topic (Chinese learning); off-topic requests are redirected
-- [ ] when I write a Chinese sentence with a grammar mistake, the agent identifies it
-- [ ] the agent explains the correction, not just states it
+- [x] agent replies in European Portuguese (not Brazilian)
+- [x] agent stays on-topic (Chinese learning); off-topic requests are redirected
+- [x] when I write a Chinese sentence with a grammar mistake, the agent identifies it
+- [x] the agent explains the correction, not just states it
 
 ## US-03: Vocab quiz drilling
 

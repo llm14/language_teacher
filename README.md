@@ -15,7 +15,7 @@ user stories and opens PRs.
 
 ```
 docker compose up -d
-docker exec ollama ollama pull mistral
+docker exec language_teacher ollama pull qwen2.5:7b
 ```
 
 The pulled model persists across restarts via a named volume.
