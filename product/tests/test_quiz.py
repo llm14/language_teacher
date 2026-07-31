@@ -3,8 +3,14 @@ import socket
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
+from product import quiz
 from product.agent_graph import OLLAMA_BASE_URL
-from product.quiz import SYSTEM_PROMPT, build_quiz_graph
+from product.quiz import (
+    AGENT_TAG,
+    QUIZ_COMPLETE_MARKER,
+    SYSTEM_PROMPT,
+    build_quiz_graph,
+)
 
 
 def _ollama_reachable() -> bool:
@@ -65,6 +71,31 @@ def test_system_prompt_restricts_to_named_vocab():
 
 def test_system_prompt_requires_judging_answers():
     assert "judge whether it is correct or incorrect" in SYSTEM_PROMPT
+
+
+def test_system_prompt_requires_completion_marker():
+    assert QUIZ_COMPLETE_MARKER in SYSTEM_PROMPT
+
+
+def test_respond_strips_completion_marker_and_flags_metadata(monkeypatch):
+    stub = _StubModel(reply=f"Terminámos! Acertaste em tudo.\n{QUIZ_COMPLETE_MARKER}")
+    monkeypatch.setattr(quiz, "_quiz_graph", build_quiz_graph(model=stub))
+
+    reply = quiz.respond([HumanMessage(content="Testa-me em 你好.")])
+
+    assert QUIZ_COMPLETE_MARKER not in reply.content
+    assert reply.content == "Terminámos! Acertaste em tudo."
+    assert reply.additional_kwargs == {"agent": AGENT_TAG, "quiz_complete": True}
+
+
+def test_respond_flags_incomplete_when_marker_absent(monkeypatch):
+    stub = _StubModel(reply="Próxima pergunta: o que significa 你好?")
+    monkeypatch.setattr(quiz, "_quiz_graph", build_quiz_graph(model=stub))
+
+    reply = quiz.respond([HumanMessage(content="Testa-me em 你好.")])
+
+    assert reply.content == "Próxima pergunta: o que significa 你好?"
+    assert reply.additional_kwargs == {"agent": AGENT_TAG, "quiz_complete": False}
 
 
 @pytest.mark.skipif(not _ollama_reachable(), reason=f"Ollama not reachable at {OLLAMA_BASE_URL}")

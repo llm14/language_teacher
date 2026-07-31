@@ -13,7 +13,6 @@ dependencies = [
 ]
 
 [project.scripts]
-implement = "devtools.implement:main"
 ship = "devtools.ship:main"
 
 [dependency-groups]

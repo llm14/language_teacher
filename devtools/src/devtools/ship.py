@@ -1,7 +1,10 @@
 """Deterministic ship pipeline: test, lint, commit, push, open PR.
 
 No LLM calls happen here. Requires the story's acceptance criteria to
-already be fully checked off by `implement` before it will commit anything.
+already be fully checked off before it will commit anything. Commits every
+changed file in the repo, not just product/ and USER_STORIES.md; anything
+outside that scope must be described via --message since there's no story
+to derive a commit message from.
 """
 
 from __future__ import annotations
@@ -27,9 +30,34 @@ def _current_branch() -> str:
     return result.stdout.strip()
 
 
+def _changed_paths() -> list[str]:
+    result = _run(["git", "status", "--porcelain"], REPO_ROOT)
+    paths = []
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        path = line[3:].strip('"')
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        paths.append(path)
+    return paths
+
+
+def _is_story_path(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    return normalized == "USER_STORIES.md" or normalized.startswith("product/")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Test, lint, commit and open a PR for a story.")
     parser.add_argument("story_id", help="Story ID, e.g. US-01")
+    parser.add_argument(
+        "--message",
+        "-m",
+        default=None,
+        help="Description of changes outside product/ and USER_STORIES.md. "
+        "Required whenever such changes are present.",
+    )
     args = parser.parse_args()
 
     story = load_story(args.story_id)
@@ -38,6 +66,13 @@ def main() -> None:
         print(f"{story.id} has unmet acceptance criteria, refusing to ship:")
         for text in unchecked:
             print(f"  - {text}")
+        raise SystemExit(1)
+
+    extra_paths = sorted(p for p in _changed_paths() if not _is_story_path(p))
+    if extra_paths and not args.message:
+        print("Changes outside product/ and USER_STORIES.md need --message to describe them:")
+        for path in extra_paths:
+            print(f"  - {path}")
         raise SystemExit(1)
 
     for label, cmd in (
@@ -59,8 +94,9 @@ def main() -> None:
             print(checkout.stderr, file=sys.stderr)
             raise SystemExit(1)
 
-    _run(["git", "add", "product", "USER_STORIES.md"], REPO_ROOT)
-    commit = _run(["git", "commit", "-m", commit_message(story)], REPO_ROOT)
+    _run(["git", "add", "-A"], REPO_ROOT)
+    message = commit_message(story, extra_message=args.message, extra_paths=extra_paths)
+    commit = _run(["git", "commit", "-m", message], REPO_ROOT)
     print(commit.stdout)
     if commit.returncode != 0:
         print(commit.stderr, file=sys.stderr)
@@ -80,7 +116,7 @@ def main() -> None:
             "--title",
             pr_title(story),
             "--body",
-            pr_body(story),
+            pr_body(story, extra_message=args.message, extra_paths=extra_paths),
             "--base",
             "main",
             "--head",

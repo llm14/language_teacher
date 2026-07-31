@@ -30,12 +30,13 @@ uv run product
 
 ## 3. Run devtools
 
+Stories are implemented interactively from a Claude Code session (see `.claude/workflows/`),
+not via a standalone script. Once a story's acceptance criteria are checked off:
+
 ```
 cd devtools
-cp .env.example .env   # fill in ANTHROPIC_API_KEY
 uv sync
-uv run implement US-01   # write code for a story
-uv run ship US-01         # test, commit, push, open PR
+uv run ship US-01   # test, commit, push, open PR
 ```
 
 ## Tests & linting
