@@ -44,6 +44,51 @@ def test_eof_ends_session_without_error():
     assert history == []
 
 
+def test_blank_input_is_a_no_op():
+    inputs = iter(["   ", "\t", "", "hello", "exit"])
+    calls: list = []
+
+    def _respond(history):
+        calls.append(list(history))
+        return AIMessage(content=f"echo: {history[-1].content}")
+
+    history = run_session(read=lambda prompt: next(inputs), write=lambda _: None, respond=_respond)
+
+    # Only the non-blank "hello" turn should ever have reached the agent.
+    assert len(calls) == 1
+    assert calls[0] == [HumanMessage(content="hello")]
+    assert history == [HumanMessage(content="hello"), AIMessage(content="echo: hello")]
+
+
+def test_backend_error_reports_one_line_and_keeps_session_alive():
+    inputs = iter(["hello", "world", "exit"])
+    writes: list = []
+    calls: list = []
+
+    def _flaky_respond(history):
+        calls.append(list(history))
+        if len(calls) == 1:
+            raise ConnectionError("Ollama unreachable at http://localhost:11434")
+        return AIMessage(content=f"echo: {history[-1].content}")
+
+    history = run_session(
+        read=lambda prompt: next(inputs),
+        write=lambda msg: writes.append(msg),
+        respond=_flaky_respond,
+    )
+
+    # First turn: backend call raised, so no AI reply was appended, but the human turn stays.
+    # Second turn: backend call succeeds normally, proving the session survived the error.
+    assert history == [
+        HumanMessage(content="hello"),
+        HumanMessage(content="world"),
+        AIMessage(content="echo: world"),
+    ]
+    error_lines = [msg for msg in writes if msg.startswith("Error:")]
+    assert len(error_lines) == 1
+    assert "\n" not in error_lines[0]
+
+
 def test_main_reconfigures_streams_to_utf8(monkeypatch):
     monkeypatch.setattr(product, "run_session", MagicMock())
     stdout = MagicMock()
